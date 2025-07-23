@@ -1,28 +1,28 @@
 # requirements.txt
 
 # Core ML and Data Handling
-pandas
-numpy
-scikit-learn
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.4.2
 
 # Data Acquisition & Parsing
-requests
-beautifulsoup4
-lxml
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.2.1
 
 # LangChain and Hugging Face Ecosystem
-langchain
-transformers
-datasets
-evaluate
-accelerate
-torch
-torchvision
-torchaudio
+langchain==0.1.16
+transformers==4.40.1
+datasets==2.19.0
+evaluate==0.4.2
+accelerate==0.29.3
+torch==2.3.0
+torchvision==0.18.0
+torchaudio==2.3.0
 
 # UI and Visualization
-streamlit
-plotly
+streamlit==1.35.0
+plotly==5.20.0
 
 # Utilities
-tqdm
+tqdm==4.66.4
