@@ -32,4 +32,4 @@ models/domain_classifier/*
 models/llama_gguf/*
 
 # Data
-data/processed/*
+data/
