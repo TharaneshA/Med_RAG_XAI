@@ -1,0 +1,28 @@
+# requirements.txt
+
+# Core ML and Data Handling
+pandas
+numpy
+scikit-learn
+
+# Data Acquisition & Parsing
+requests
+beautifulsoup4
+lxml
+
+# LangChain and Hugging Face Ecosystem
+langchain
+transformers
+datasets
+evaluate
+accelerate
+torch
+torchvision
+torchaudio
+
+# UI and Visualization
+streamlit
+plotly
+
+# Utilities
+tqdm
