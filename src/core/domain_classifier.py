@@ -10,7 +10,7 @@ from transformers import (
     TrainingArguments
 )
 import numpy as np
-import evaluate
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,23 +28,21 @@ MODEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def compute_metrics(eval_pred):
     """Computes accuracy, F1, precision, and recall from predictions."""
-    # --- MODIFIED SECTION ---
-    # Load metrics from the local 'metrics' folder
-    metric_acc = evaluate.load("./metrics/accuracy")
-    metric_f1 = evaluate.load("./metrics/f1")
-    metric_precision = evaluate.load("./metrics/precision")
-    metric_recall = evaluate.load("./metrics/recall")
-    # --- END MODIFIED SECTION ---
-    
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     
-    accuracy = metric_acc.compute(predictions=predictions, references=labels)
-    f1 = metric_f1.compute(predictions=predictions, references=labels)
-    precision = metric_precision.compute(predictions=predictions, references=labels)
-    recall = metric_recall.compute(predictions=predictions, references=labels)
-
-    return {"accuracy": accuracy["accuracy"], "f1": f1["f1"], "precision": precision["precision"], "recall": recall["recall"]}
+    # Use scikit-learn's functions directly
+    accuracy = accuracy_score(y_true=labels, y_pred=predictions)
+    f1 = f1_score(y_true=labels, y_pred=predictions, average="weighted")
+    precision = precision_score(y_true=labels, y_pred=predictions, average="weighted")
+    recall = recall_score(y_true=labels, y_pred=predictions, average="weighted")
+    
+    return {
+        "accuracy": accuracy,
+        "f1": f1,
+        "precision": precision,
+        "recall": recall
+    }
 
 def main():
     logging.info("--- Training Domain Classifier ---")
