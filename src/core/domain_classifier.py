@@ -28,25 +28,23 @@ MODEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def compute_metrics(eval_pred):
     """Computes accuracy, F1, precision, and recall from predictions."""
-    metric_acc = evaluate.load("accuracy")
-    metric_f1 = evaluate.load("f1")
-    metric_precision = evaluate.load("precision")
-    metric_recall = evaluate.load("recall")
+    # --- MODIFIED SECTION ---
+    # Load metrics from the local 'metrics' folder
+    metric_acc = evaluate.load("./metrics/accuracy")
+    metric_f1 = evaluate.load("./metrics/f1")
+    metric_precision = evaluate.load("./metrics/precision")
+    metric_recall = evaluate.load("./metrics/recall")
+    # --- END MODIFIED SECTION ---
     
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     
     accuracy = metric_acc.compute(predictions=predictions, references=labels)
-    f1 = metric_f1.compute(predictions=predictions, references=labels, average="weighted")
-    precision = metric_precision.compute(predictions=predictions, references=labels, average="weighted")
-    recall = metric_recall.compute(predictions=predictions, references=labels, average="weighted")
-    
-    return {
-        "accuracy": accuracy["accuracy"],
-        "f1": f1["f1"],
-        "precision": precision["precision"],
-        "recall": recall["recall"]
-    }
+    f1 = metric_f1.compute(predictions=predictions, references=labels)
+    precision = metric_precision.compute(predictions=predictions, references=labels)
+    recall = metric_recall.compute(predictions=predictions, references=labels)
+
+    return {"accuracy": accuracy["accuracy"], "f1": f1["f1"], "precision": precision["precision"], "recall": recall["recall"]}
 
 def main():
     logging.info("--- Training Domain Classifier ---")
