@@ -49,20 +49,42 @@ class MedicalRAGPipeline:
             verbose=False,
         )
         
-        # Define the Prompt Template for Phi-3
-        prompt_template_str = """<|user|>
-You are a helpful medical assistant. Answer the user's question based ONLY on the provided context.
-If the information is not in the context, state that you cannot answer based on the provided information.
-
-Context:
-{context}
-
-Question: {question}<|end|>
-<|assistant|>
-"""
-        self.prompt_template = PromptTemplate(
-            template=prompt_template_str,
-            input_variables=["context", "question"]
+        logging.info("Defining prompt template...") 
+        # This new system prompt gives the AI more agency 
+        system_prompt = """You are Med-AI, an advanced AI medical assistant. Your goal is to provide comprehensive and accurate answers to medical and scientific questions. 
+        
+        **Primary Directive:** 
+        Answer the user's question using your own extensive knowledge. 
+        
+        **Using Provided Context:** 
+        You will be given a `[CONTEXT]` section containing retrieved documents. Use this context ONLY for the following purposes: 
+        1. To verify factual information, such as specific statistics, drug dosages, or study results. 
+        2. To provide direct quotes or citations to support your answer. 
+        3. If your own knowledge is insufficient, you may use the context to formulate the answer. 
+        
+        If you use information from the context, cite it by mentioning it (e.g., "According to a retrieved document..."). 
+        
+        **Mandatory Rules:** 
+        1. **Disclaimer First:** Do NOT wait until the end. Start EVERY response with the following disclaimer: "**Disclaimer: This is for informational purposes only. Consult a qualified healthcare professional for medical advice.**" 
+        2. **No Medical Advice:** Never provide direct medical advice, diagnoses, or treatment plans. You are an informational tool, not a medical provider. 
+        3. **Tone:** Maintain a professional, clear, and empathetic tone. 
+        """ 
+        
+        # The prompt template now includes the detailed system prompt 
+        prompt_template_str = f"""<|system|> 
+        {system_prompt}<|end|> 
+        <|user|> 
+        [CONTEXT] 
+        {{context}} 
+        
+        [QUESTION] 
+        {{question}}<|end|> 
+        <|assistant|> 
+        """ 
+        
+        self.prompt_template = PromptTemplate( 
+            template=prompt_template_str, 
+            input_variables=["context", "question"] 
         )
         
         # Create the LangChain Chain
