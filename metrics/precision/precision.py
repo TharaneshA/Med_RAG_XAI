@@ -1,5 +1,6 @@
 import evaluate
 from sklearn.metrics import precision_score
+from datasets import Features, Value, Sequence
 
 _DESCRIPTION = "Precision is the fraction of relevant instances among the retrieved instances."
 _KWARGS_DESCRIPTION = "Args: predictions: Predicted labels. references: Ground truth labels."
@@ -12,10 +13,10 @@ class Precision(evaluate.Metric):
             description=_DESCRIPTION,
             citation=_CITATION,
             inputs_description=_KWARGS_DESCRIPTION,
-            features=evaluate.Features(
+            features=Features(
                 {
-                    "predictions": evaluate.Sequence(evaluate.Value("int32")),
-                    "references": evaluate.Sequence(evaluate.Value("int32")),
+                    "predictions": Sequence(Value("int32")),
+                    "references": Sequence(Value("int32")),
                 }
             ),
         )

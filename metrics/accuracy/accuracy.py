@@ -1,5 +1,6 @@
 import evaluate
 from sklearn.metrics import accuracy_score
+from datasets import Features, Value
 
 _DESCRIPTION = "Accuracy is the proportion of correct predictions among the total number of cases processed."
 _KWARGS_DESCRIPTION = "Args: predictions: Predicted labels. references: Ground truth labels."
@@ -12,10 +13,10 @@ class Accuracy(evaluate.Metric):
             description=_DESCRIPTION,
             citation=_CITATION,
             inputs_description=_KWARGS_DESCRIPTION,
-            features=evaluate.Features(
+            features=Features(
                 {
-                    "predictions": evaluate.Value("int32"),
-                    "references": evaluate.Value("int32"),
+                    "predictions": Value("int32"),
+                    "references": Value("int32"),
                 }
             ),
         )
