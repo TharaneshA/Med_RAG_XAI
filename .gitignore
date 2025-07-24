@@ -35,3 +35,6 @@ models/llama_gguf/*
 # Data
 data/
 
+#Vector space
+chromadb/
+
