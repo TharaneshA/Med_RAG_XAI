@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CLASSIFIER_MODEL_PATH = BASE_DIR / "models" / "domain_classifier"
 # Updated to use the recommended Phi-3-mini model
-LLM_MODEL_PATH = BASE_DIR / "models" / "llama_gguf" / "phi-3-mini-4k-instruct.Q4_K_M.gguf"
+LLM_MODEL_PATH = BASE_DIR / "models" / "phi3mini" / "phi-3-mini-4k-instruct-q4.gguf"
 DB_PATH = str(BASE_DIR / "chromadb")
 COLLECTION_NAME = "medical_knowledge_base"
 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     # This is for testing the pipeline directly
     if not LLM_MODEL_PATH.exists():
         print(f"Error: LLM model not found at {LLM_MODEL_PATH}")
-        print("Please download the Phi-3-mini GGUF model and place it in the models/llama_gguf directory.")
+        print("Please download the Phi-3-mini GGUF model and place it in the models/phi3mini directory.")
     else:
         rag_pipeline = MedicalRAGPipeline()
         

@@ -30,7 +30,7 @@ thumbs.db
 
 # Models
 models/domain_classifier/*
-models/llama_gguf/*
+models/phi3mini/*
 
 # Data
 data/
