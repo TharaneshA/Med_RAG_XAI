@@ -7,6 +7,7 @@ from transformers import pipeline
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import LlamaCpp
 from langchain.chains import LLMChain
+from .explainability import get_shap_explainer 
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,6 +24,8 @@ class MedicalRAGPipeline:
     def __init__(self):
         """Initializes all components of the RAG pipeline."""
         logging.info("Initializing Medical RAG Pipeline...")
+        self.explainer = get_shap_explainer() # Get the SHAP explainer instance
+        logging.info("Medical RAG Pipeline initialized successfully.")
         
         # --- 1. Load Domain Classifier ---
         logging.info("Loading domain classifier...")
@@ -99,22 +102,28 @@ Question: {question}<|end|>
         predicted_domain = prediction[0]['label']
         logging.info(f"Predicted query domain: {predicted_domain}")
 
-        # --- 2. Retrieve relevant documents ---
         retrieved_docs, retrieved_metadatas = self.retrieve_documents(query, predicted_domain)
         if not retrieved_docs:
-            logging.warning("No relevant documents found for the query and domain.")
-            return {"answer": "I could not find any relevant information in the knowledge base to answer your question.", "sources": [], "metadatas": []}
+            return {"answer": "I could not find any relevant information...", "sources": [], "contributions": {}}
             
+        # --- NEW: Use the SHAP explainer ---
+        explained_sources, domain_contributions = self.explainer.explain(
+            query, retrieved_docs, retrieved_metadatas
+        )
+        
         context_str = "\n\n---\n\n".join(retrieved_docs)
 
-        # --- 3. Generate the answer ---
         logging.info("Generating answer with the LLM...")
         response = self.llm_chain.invoke({
             "context": context_str,
             "question": query
         })
 
-        return {"answer": response['text'], "sources": retrieved_docs, "metadatas": retrieved_metadatas}
+        return {
+            "answer": response['text'], 
+            "sources": explained_sources, # Pass the explained sources to the UI
+            "contributions": domain_contributions
+        }
 
 if __name__ == '__main__':
     # This is for testing the pipeline directly

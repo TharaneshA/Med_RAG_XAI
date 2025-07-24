@@ -20,6 +20,9 @@ torch==2.3.0
 torchvision==0.18.0
 torchaudio==2.3.0
 
+# XAI
+shap==0.45.0
+
 # UI and Visualization
 streamlit==1.35.0
 plotly==5.20.0
