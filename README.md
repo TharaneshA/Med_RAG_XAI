@@ -102,7 +102,7 @@ med_rag_xai/
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/TharaneshA/Med_RAG_XAI
 cd med_rag_xai
 ```
 
