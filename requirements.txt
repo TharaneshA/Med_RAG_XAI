@@ -22,6 +22,7 @@ accelerate==0.29.3
 torch==2.3.0
 torchvision==0.18.0
 torchaudio==2.3.0
+llama-cpp-python
 
 # XAI
 shap==0.45.0
@@ -32,3 +33,4 @@ plotly==5.20.0
 
 # Utilities
 tqdm==4.66.4
+hf_xet
