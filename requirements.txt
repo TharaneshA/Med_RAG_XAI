@@ -34,3 +34,4 @@ plotly==5.20.0
 # Utilities
 tqdm==4.66.4
 hf_xet
+nltk
