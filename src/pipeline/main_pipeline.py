@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # --- Configuration ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CLASSIFIER_MODEL_PATH = BASE_DIR / "models" / "domain_classifier"
-LLM_MODEL_PATH = BASE_DIR / "models" / "llama_gguf" / "phi-3-mini-4k-instruct.Q4_K_M.gguf"
+LLM_MODEL_PATH = BASE_DIR / "models" / "phi3mini" / "phi-3-mini-4k-instruct-q4.gguf"
 DB_PATH = str(BASE_DIR / "chromadb")
 COLLECTION_NAME = "medical_knowledge_base"
 

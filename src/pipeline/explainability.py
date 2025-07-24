@@ -3,6 +3,16 @@ import shap
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from collections import Counter
+import numpy as np
+import scipy as sp
+
+# We need to ensure the nltk sentence tokenizer is downloaded
+import nltk
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError: # Changed from nltk.downloader.DownloadError
+    print("Downloading nltk punkt tokenizer...")
+    nltk.download('punkt')
 
 class ShapRAGExplainer:
     _instance = None
@@ -12,14 +22,34 @@ class ShapRAGExplainer:
             logging.info("Initializing SHAP Explainer...")
             cls._instance = super(ShapRAGExplainer, cls).__new__(cls)
             
-            # --- Load Cross-Encoder Model and Tokenizer ---
             model_name = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
             cls._instance.tokenizer = AutoTokenizer.from_pretrained(model_name)
             cls._instance.model = AutoModelForSequenceClassification.from_pretrained(model_name)
             
-            # --- Create SHAP Explainer ---
-            # We use a Partition explainer, which is suitable for transformer models.
-            cls._instance.explainer = shap.Explainer(cls._instance.model, cls._instance.tokenizer)
+            # --- THE FIX: Create a custom prediction function for the explainer ---
+            # This function ensures the data passed to the model is in the correct batch format
+            def prediction_function(x):
+                try:
+                    # Tokenize the input text array
+                    inputs = cls._instance.tokenizer(list(x), padding=True, truncation=True, return_tensors="pt")
+                    # Move tensors to the same device as the model
+                    inputs = {key: val.to(cls._instance.model.device) for key, val in inputs.items()}
+                    # Get model predictions
+                    with torch.no_grad():
+                        outputs = cls._instance.model(**inputs)
+                    # We're interested in the raw score (logit) for the positive class
+                    # For cross-encoders, this is typically the only output logit
+                    scores = outputs.logits.detach().cpu().numpy()
+                    return scores
+                except Exception as e:
+                    logging.error(f"Error in SHAP prediction function: {e}")
+                    # Return a correctly shaped array of zeros on error
+                    return np.zeros((len(x), cls._instance.model.config.num_labels))
+            
+            cls._instance.prediction_function = prediction_function
+            
+            # Pass the custom function to the explainer
+            cls._instance.explainer = shap.Explainer(cls._instance.prediction_function, cls._instance.tokenizer)
             logging.info("SHAP Explainer initialized successfully.")
         return cls._instance
 
@@ -29,22 +59,18 @@ class ShapRAGExplainer:
 
         explained_sources = []
         for doc_text, metadata in zip(retrieved_docs, retrieved_metadatas):
-            # Generate SHAP values for the [query, document] pair
-            shap_values = self._instance.explainer([query, doc_text])
+            # The input for SHAP text explainer is a list of strings
+            shap_values = self._instance.explainer([query + " " + doc_text])
             
-            # The output for a cross-encoder is a single score. We look at the explanation for that.
-            # We use shap_values.values[1] because we want the explanation for the document part (index 1), not the query part (index 0).
-            # We use shap_values.data[1] to get the tokenized document text.
+            # The output has shape (batch, tokens). We take the first (and only) item.
             explained_sources.append({
                 "full_text": doc_text,
                 "metadata": metadata,
-                "shap_values": shap_values.values[1].tolist(),
-                "tokens": shap_values.data[1].tolist()
+                "shap_values": shap_values.values[0].tolist(),
+                "tokens": shap_values.data[0].tolist()
             })
 
-        # Calculate domain contributions based on all retrieved documents
         domain_contributions = self._calculate_domain_contributions(retrieved_metadatas)
-
         return explained_sources, domain_contributions
     
     def _calculate_domain_contributions(self, metadatas: list[dict]) -> dict:

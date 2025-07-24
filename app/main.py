@@ -25,10 +25,11 @@ st.set_page_config(
 # --- XAI Visualization Function ---
 def shap_to_html(tokens, shap_values):
     """
-    Creates an HTML string to visualize SHAP values on text, making it more readable.
+    Creates an HTML string to visualize SHAP values on text.
     Positive values (red) increase relevance, negative (blue) decrease it.
     """
     # Normalize values for color intensity mapping
+    shap_values = np.array(shap_values)
     max_abs_val = np.abs(shap_values).max()
     if max_abs_val == 0:
         max_abs_val = 1  # Avoid division by zero
@@ -51,7 +52,7 @@ def shap_to_html(tokens, shap_values):
             color = f'rgba(30, 144, 255, {alpha})' # A nice blue color
             
         # Add a subtle tooltip to show the actual SHAP value on hover
-        tooltip_text = f"SHAP Value: {value:.4f}"
+        tooltip_text = f"SHAP Value: {float(np.asarray(value).flat[0]):.4f}"
         html += f'<span title="{tooltip_text}" style="background-color: {color}; padding: 2px 4px; border-radius: 4px; margin: 1px;">{clean_token}</span> '
         
     html += "</p>"
@@ -112,7 +113,6 @@ if prompt := st.chat_input("Ask your medical question here..."):
                     st.markdown("---")
                     for i, source in enumerate(sources):
                         domain = source['metadata'].get('domain', 'Unknown')
-                        file_name = source['metadata'].get('file_name', 'N/A')
                         st.subheader(f"Source {i+1} (Domain: {domain})")
                         
                         # Render the SHAP explanation as colored HTML
