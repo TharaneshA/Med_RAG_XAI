@@ -23,6 +23,9 @@ An advanced Retrieval-Augmented Generation (RAG) system designed to answer medic
 
 ---
 
+![WhatsApp Image 2025-07-24 at 17 50 13_08d97353](https://github.com/user-attachments/assets/772d4f51-09ce-4c4b-a534-5fec108315d5)
+
+
 ## System Architecture
 
 The pipeline processes a user query through the following steps:
