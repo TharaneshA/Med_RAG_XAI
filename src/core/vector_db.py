@@ -1,5 +1,3 @@
-# src/core/vector_db.py
-
 import json
 from pathlib import Path
 import logging
@@ -17,18 +15,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PROCESSED_DATA_DIR = BASE_DIR / "data" / "processed"
 CHUNKS_FILE_PATH = PROCESSED_DATA_DIR / "all_processed_chunks.jsonl"
 CLASSIFIER_MODEL_PATH = BASE_DIR / "models" / "domain_classifier"
-DB_PATH = str(BASE_DIR / "chromadb") # ChromaDB path must be a string
+DB_PATH = str(BASE_DIR / "chromadb") 
 COLLECTION_NAME = "medical_knowledge_base"
 
 def main():
-    logging.info("--- Starting Vector Database Indexing ---")
+    logging.info("--- Starting Vector Database Indexing (Optimized) ---")
 
     # --- 1. Load Models ---
     logging.info("Loading Domain Classifier and Embedding Model...")
-    # Determine device: use GPU if available
     device = 0 if torch.cuda.is_available() else -1
     
-    # Load your fine-tuned classifier
     domain_classifier = pipeline(
         "text-classification",
         model=str(CLASSIFIER_MODEL_PATH),
@@ -36,7 +32,6 @@ def main():
         device=device
     )
     
-    # Get the embedding model from our handler
     embedding_model = get_embedding_model()
     
     # --- 2. Load Data ---
@@ -51,42 +46,58 @@ def main():
     # --- 3. Initialize ChromaDB ---
     logging.info(f"Initializing ChromaDB client at {DB_PATH}...")
     client = chromadb.PersistentClient(path=DB_PATH)
-    # Get or create the collection
+    
+    # Delete the old collection to start fresh if it exists
+    try:
+        if COLLECTION_NAME in [c.name for c in client.list_collections()]:
+            logging.warning(f"Collection '{COLLECTION_NAME}' already exists. Deleting to re-index.")
+            client.delete_collection(name=COLLECTION_NAME)
+    except Exception as e:
+        logging.error(f"Could not delete old collection: {e}")
+
     collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
-    # --- 4. Process and Insert in Batches ---
-    batch_size = 500 # Process 500 chunks at a time to manage memory
-    logging.info(f"Processing {len(all_chunks)} chunks in batches of {batch_size}...")
+    # --- 4. Process and Insert in Batches (Optimized) ---
+    main_batch_size = 2048  # Increased batch size for less loop overhead
+    gpu_batch_size = 64    # Batch size for model inference to maximize GPU usage
+    
+    logging.info(f"Processing {len(all_chunks)} chunks in main batches of {main_batch_size}...")
 
-    for i in tqdm(range(0, len(all_chunks), batch_size), desc="Indexing Chunks"):
-        batch_chunks = all_chunks[i:i + batch_size]
-        
-        # Prepare data for the current batch
-        chunk_texts = [chunk['text'] for chunk in batch_chunks]
-        chunk_ids = [chunk['chunk_id'] for chunk in batch_chunks]
+    # Use tqdm to show progress in terms of chunks, not batches
+    with tqdm(total=len(all_chunks), desc="Indexing Chunks") as progress_bar:
+        for i in range(0, len(all_chunks), main_batch_size):
+            batch_chunks = all_chunks[i:i + main_batch_size]
+            
+            chunk_texts = [chunk['text'] for chunk in batch_chunks]
+            chunk_ids = [chunk['chunk_id'] for chunk in batch_chunks]
 
-        # Predict domains for the batch
-        # We pass only the texts to the classifier
-        domain_predictions = domain_classifier(chunk_texts, padding=True, truncation=True, max_length=512)
-        
-        # Generate embeddings for the batch
-        embeddings = embedding_model.encode(chunk_texts, show_progress_bar=False).tolist()
+            # Predict domains for the batch with optimized batching
+            domain_predictions = domain_classifier(
+                chunk_texts, padding=True, truncation=True, max_length=512, batch_size=gpu_batch_size
+            )
+            
+            # Generate embeddings for the batch with optimized batching
+            embeddings = embedding_model.encode(
+                chunk_texts, show_progress_bar=False, batch_size=gpu_batch_size
+            ).tolist()
 
-        # Create metadata for the batch
-        metadatas = []
-        for j, chunk in enumerate(batch_chunks):
-            metadata = chunk['metadata']
-            # Add the predicted domain to the metadata
-            metadata['domain'] = domain_predictions[j]['label']
-            metadatas.append(metadata)
+            metadatas = []
+            for j, chunk in enumerate(batch_chunks):
+                metadata = chunk['metadata']
+                metadata['domain'] = domain_predictions[j]['label']
+                
+                if 'MeSH' in metadata and isinstance(metadata['MeSH'], list):
+                    metadata['MeSH'] = ", ".join(metadata['MeSH'])
 
-        # Insert the batch into ChromaDB
-        collection.add(
-            ids=chunk_ids,
-            embeddings=embeddings,
-            metadatas=metadatas,
-            documents=chunk_texts # Storing the text directly in the DB is useful
-        )
+                metadatas.append(metadata)
+
+            collection.add(
+                ids=chunk_ids,
+                embeddings=embeddings,
+                metadatas=metadatas,
+                documents=chunk_texts
+            )
+            progress_bar.update(len(batch_chunks))
 
     logging.info(f"Successfully indexed {len(all_chunks)} chunks into the '{COLLECTION_NAME}' collection.")
     logging.info("--- Vector Database Indexing Finished ---")
