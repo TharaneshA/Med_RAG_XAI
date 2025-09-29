@@ -16,7 +16,7 @@ An advanced Retrieval-Augmented Generation (RAG) system designed to answer medic
   Utilizes the SHAP (SHapley Additive exPlanations) framework on a cross-encoder model to provide word-level explanations for document relevance.
 
 - **Local & Open-Source**  
-  Runs entirely on local hardware using open-source models (e.g., Microsoft's Phi-3) and libraries, ensuring privacy and control.
+  Runs entirely on local hardware using open-source models (BioClinical-Bert and Microsoft's Phi-3 mini) and libraries, ensuring privacy and control.
 
 - **Interactive UI**  
   A user-friendly web interface built with Streamlit for easy interaction and clear visualization of results and explanations.
